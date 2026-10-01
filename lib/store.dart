@@ -67,7 +67,7 @@ class LifeStore extends ChangeNotifier {
     await db.save('goals',item.toMap()); goals=[item,...goals]; notifyListeners();
   }
   Future<void> updateGoal(Goal goal,int progress) async {
-    final next=goal.copyWith(progress:progress.clamp(0,100)); await db.save('goals',next.toMap());
+    final next=goal.copyWith(progress:progress.clamp(0,100).toInt()); await db.save('goals',next.toMap());
     goals=goals.map((x)=>x.id==goal.id?next:x).toList(); notifyListeners();
   }
 
