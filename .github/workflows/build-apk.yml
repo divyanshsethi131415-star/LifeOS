@@ -19,16 +19,49 @@ jobs:
           cache: true
       - name: Generate Android project
         run: flutter create --platforms=android .
-      - name: Add notification permission
+      - name: Configure Android notifications
+        shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path("android/app/src/main/AndroidManifest.xml")
-          s=p.read_text()
-          marker='<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
-          if marker not in s:
+          manifest=Path("android/app/src/main/AndroidManifest.xml")
+          s=manifest.read_text()
+          if "android.permission.POST_NOTIFICATIONS" not in s:
               s=s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
-                          '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    '+marker)
+                          '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>')
+          elif "android.permission.RECEIVE_BOOT_COMPLETED" not in s:
+              s=s.replace('</manifest>','    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n</manifest>')
+          manifest.write_text(s)
+          PY
+      - name: Configure Java 17 and desugaring
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/build.gradle.kts")
+          if p.exists():
+              s=p.read_text()
+              s=s.replace('android {', 'android {', 1)
+              if 'isCoreLibraryDesugaringEnabled = true' not in s:
+                  if 'compileOptions {' not in s:
+                      s=s.replace('android {', 'android {\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }', 1)
+                  else:
+                      s=s.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
+              s=s.replace('sourceCompatibility = JavaVersion.VERSION_11','sourceCompatibility = JavaVersion.VERSION_17').replace('targetCompatibility = JavaVersion.VERSION_11','targetCompatibility = JavaVersion.VERSION_17').replace('sourceCompatibility = JavaVersion.VERSION_1_8','sourceCompatibility = JavaVersion.VERSION_17').replace('targetCompatibility = JavaVersion.VERSION_1_8','targetCompatibility = JavaVersion.VERSION_17')
+              if 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")' not in s:
+                  s=s.replace('dependencies {', 'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")', 1) if 'dependencies {' in s else s+'\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
+              p.write_text(s)
+          else:
+              p=Path("android/app/build.gradle")
+              s=p.read_text()
+              if 'coreLibraryDesugaringEnabled true' not in s:
+                  if 'compileOptions {' not in s:
+                      s=s.replace('android {','android {\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }',1)
+                  else:
+                      s=s.replace('compileOptions {','compileOptions {\n        coreLibraryDesugaringEnabled true',1)
+              s=s.replace('sourceCompatibility JavaVersion.VERSION_1_8','sourceCompatibility JavaVersion.VERSION_17').replace('targetCompatibility JavaVersion.VERSION_1_8','targetCompatibility JavaVersion.VERSION_17')
+              if "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'" not in s:
+                  s=s.replace('dependencies {', "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'", 1)
               p.write_text(s)
           PY
       - run: flutter pub get
