@@ -25,4 +25,21 @@ void main(){
     final r=LifeAi().ask('plan my day',tasks,[],[],[]);
     expect(r.text,contains('Finish maths'));
   });
+  test('AI handles empty prompt safely',(){
+    final r=LifeAi().ask('',tasks,[],[],[]);
+    expect(r.text,contains('organize'));
+  });
+
+  test('AI summarizes goal and habit state',(){
+    final goal=Goal(id:1,name:'Learn Flutter',progress:40,createdAt:now);
+    final habit=Habit(id:1,name:'Read',createdAt:now);
+    expect(LifeAi().ask('show my goals',tasks,[goal],[habit],[]).text,contains('Learn Flutter'));
+    expect(LifeAi().ask('show my habits',tasks,[goal],[habit],[]).text,contains('Read'));
+  });
+
+  test('AI reports note context and statistics',(){
+    final note=Note(id:1,title:'Ideas',body:'Build a calmer dashboard',updatedAt:now);
+    expect(LifeAi().ask('summarize notes',tasks,[],[],[note]).text,contains('Ideas'));
+    expect(LifeAi().ask('stats',tasks,[],[],[note]).text,contains('Tasks 2'));
+  });
 }
