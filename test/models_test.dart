@@ -11,11 +11,16 @@ void main(){
     expect(copy.description,'Chapters 1-3');
     expect(copy.priority,Priority.critical);
     expect(copy.dueAt,d);
+    expect(copy.toMap()['completed'],0);
+  });
+
+  test('unknown enum values use safe fallbacks',(){
+    expect(enumFrom(Priority.values,'not-real',Priority.medium),Priority.medium);
   });
 
   test('habit streak counts consecutive dates',(){
     final today=DateTime.now();
-    final previous=today.subtract(const Duration(days:1));
+    final previous=DateTime(today.year,today.month,today.day-1);
     final h=Habit(id:1,name:'Read',completedDays:[Habit.key(today),Habit.key(previous)],createdAt:today);
     expect(h.currentStreak,2);
   });
