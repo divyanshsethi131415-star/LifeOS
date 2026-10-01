@@ -103,7 +103,7 @@ class LifeStore extends ChangeNotifier {
   Future<void> importJson(String raw) async {
     final data=jsonDecode(raw) as Map<String,dynamic>;
     await db.clearAll();
-    for(final e in (data['tasks'] as List???const [])) await db.save('tasks',Map<String,Object?>.from(e as Map));
+    for(final e in (data['tasks'] as List? ?? const [])) await db.save('tasks',Map<String,Object?>.from(e as Map));
     for(final e in (data['goals'] as List? ??const [])) await db.save('goals',Map<String,Object?>.from(e as Map));
     for(final e in (data['habits'] as List? ??const [])) await db.save('habits',Map<String,Object?>.from(e as Map));
     for(final e in (data['projects'] as List? ??const [])) await db.save('projects',Map<String,Object?>.from(e as Map));
