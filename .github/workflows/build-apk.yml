@@ -1,0 +1,36 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Android project
+        run: flutter create --platforms=android .
+      - name: Add notification permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          s=p.read_text()
+          marker='<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
+          if marker not in s:
+              s=s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+                          '<manifest xmlns:android="http://schemas.android.com/apk/res/android">\n    '+marker)
+              p.write_text(s)
+          PY
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: life-os-android
+          path: build/app/outputs/flutter-apk/app-release.apk
