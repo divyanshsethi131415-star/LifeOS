@@ -316,85 +316,558 @@ class _CalendarPageState extends State<CalendarPage>{
   }
 }
 
-class Goals extends StatelessWidget{
-  final LifeStore store;const Goals({super.key,required this.store});
-  @override Widget build(BuildContext context)=>Frame(title:'Goals',subtitle:'Outcomes → milestones → progress',actions:[IconButton(onPressed:()=>goalDialog(context,store),icon:const Icon(Icons.add))],child:store.goals.isEmpty?const Text('No goals yet.'):Column(children:store.goals.map((g)=>CardBox(title:g.name,icon:Icons.flag_outlined,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-    Row(children:[Chip(label:Text(g.category)),const Spacer(),Text(g.progress.toString()+'%')]),
-    const SizedBox(height:8),LinearProgressIndicator(value:g.progress/100,minHeight:8,borderRadius:BorderRadius.circular(8)),
-    Slider(value:g.progress.toDouble(),min:0,max:100,divisions:20,onChanged:(v)=>store.updateGoal(g,v.round()))
-  ]))).toList());
+class Goals extends StatelessWidget {
+  final LifeStore store;
+  const Goals({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = store.goals.map((g) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: CardBox(
+          title: g.name,
+          icon: Icons.flag_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Chip(label: Text(g.category)),
+                const Spacer(),
+                Text(g.progress.toString() + '%'),
+              ]),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: g.progress / 100, minHeight: 8),
+              Slider(
+                value: g.progress.toDouble(),
+                min: 0,
+                max: 100,
+                divisions: 20,
+                onChanged: (v) => store.updateGoal(g, v.round()),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+
+    return Frame(
+      title: 'Goals',
+      subtitle: 'Outcomes → milestones → progress',
+      actions: [
+        IconButton(onPressed: () => goalDialog(context, store), icon: const Icon(Icons.add)),
+      ],
+      child: cards.isEmpty ? const Text('No goals yet.') : Column(children: cards),
+    );
+  }
 }
 
-Future<void> goalDialog(BuildContext context,LifeStore store)async{
-  final c=TextEditingController();var category='Personal';
-  await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('New goal'),content:Column(mainAxisSize:MainAxisSize.min,children:[
-    TextField(controller:c,autofocus:true,decoration:const InputDecoration(labelText:'Goal name')),
-    const SizedBox(height:10),
-    DropdownButtonFormField<String>(value:category,items:const['Personal','Academic','Fitness','Coding','Gaming','Work'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>category=v??category)
-  ]),actions:[FilledButton(onPressed:()async{if(c.text.trim().isNotEmpty)await store.addGoal(c.text,category);if(ctx.mounted)Navigator.pop(ctx);},child:const Text('Create'))]));
+Future<void> goalDialog(BuildContext context, LifeStore store) async {
+  final controller = TextEditingController();
+  var category = 'Personal';
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setD) => AlertDialog(
+        title: const Text('New goal'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'Goal name')),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              value: category,
+              items: const ['Personal', 'Academic', 'Fitness', 'Coding', 'Gaming', 'Work']
+                  .map((x) => DropdownMenuItem(value: x, child: Text(x)))
+                  .toList(),
+              onChanged: (v) => setD(() => category = v ?? category),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) await store.addGoal(controller.text, category);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-class Habits extends StatelessWidget{
-  final LifeStore store;const Habits({super.key,required this.store});
-  @override Widget build(BuildContext context)=>Frame(title:'Habits',subtitle:'Consistency without punishment',actions:[IconButton(onPressed:()=>habitDialog(context,store),icon:const Icon(Icons.add))],child:store.habits.isEmpty?const Text('No habits yet.'):Column(children:store.habits.map((h)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-    leading:CircleAvatar(child:Text(h.icon)),title:Text(h.name,style:const TextStyle(fontWeight:FontWeight.w700)),subtitle:Text(h.currentStreak.toString()+' day streak'),trailing:FilledButton.tonal(onPressed:()=>store.toggleHabit(h,DateTime.now()),child:Text(h.isDoneOn(DateTime.now())?'Done':'Mark done')),
-  ))).toList());
-}
-Future<void> habitDialog(BuildContext context,LifeStore store)async{
-  final c=TextEditingController();await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('New habit'),content:TextField(controller:c,autofocus:true,decoration:const InputDecoration(labelText:'Habit name')),actions:[FilledButton(onPressed:()async{if(c.text.trim().isNotEmpty)await store.addHabit(c.text,'✓');if(ctx.mounted)Navigator.pop(ctx);},child:const Text('Create'))]));
+class Habits extends StatelessWidget {
+  final LifeStore store;
+  const Habits({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = store.habits.map((h) {
+      final done = h.isDoneOn(DateTime.now());
+      return Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: ListTile(
+          leading: CircleAvatar(child: Text(h.icon)),
+          title: Text(h.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text(h.currentStreak.toString() + ' day streak'),
+          trailing: FilledButton.tonal(
+            onPressed: () => store.toggleHabit(h, DateTime.now()),
+            child: Text(done ? 'Done' : 'Mark done'),
+          ),
+        ),
+      );
+    }).toList();
+
+    return Frame(
+      title: 'Habits',
+      subtitle: 'Consistency without punishment',
+      actions: [
+        IconButton(onPressed: () => habitDialog(context, store), icon: const Icon(Icons.add)),
+      ],
+      child: cards.isEmpty ? const Text('No habits yet.') : Column(children: cards),
+    );
+  }
 }
 
-class Projects extends StatelessWidget{
-  final LifeStore store;const Projects({super.key,required this.store});
-  @override Widget build(BuildContext context)=>Frame(title:'Projects',subtitle:'Keep multi-step work together',actions:[IconButton(onPressed:()=>projectDialog(context,store),icon:const Icon(Icons.add))],child:store.projects.isEmpty?const Text('No projects yet.'):Column(children:store.projects.map((p)=>CardBox(title:p.name,icon:Icons.folder_open,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-    Text(p.description.isEmpty?'No description':p.description),const SizedBox(height:10),LinearProgressIndicator(value:p.progress/100),const SizedBox(height:6),Text(p.progress.toString()+'% • '+p.status.name)
-  ])).toList());
-}
-Future<void> projectDialog(BuildContext context,LifeStore store)async{
-  final n=TextEditingController();final d=TextEditingController();await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('New project'),content:Column(mainAxisSize:MainAxisSize.min,children:[
-    TextField(controller:n,autofocus:true,decoration:const InputDecoration(labelText:'Name')),const SizedBox(height:10),TextField(controller:d,maxLines:3,decoration:const InputDecoration(labelText:'Description'))
-  ]),actions:[FilledButton(onPressed:()async{if(n.text.trim().isNotEmpty)await store.addProject(n.text,d.text);if(ctx.mounted)Navigator.pop(ctx);},child:const Text('Create'))]));
-}
-
-class Notes extends StatefulWidget{final LifeStore store;const Notes({super.key,required this.store});@override State<Notes> createState()=>_NotesState();}
-class _NotesState extends State<Notes>{String q='';
-  @override Widget build(BuildContext context){final xs=widget.store.notes.where((n)=>(n.title+' '+n.body+' '+n.tags).toLowerCase().contains(q.toLowerCase())).toList();return Frame(title:'Notes',subtitle:'Searchable local knowledge',actions:[IconButton(onPressed:()=>noteDialog(context,widget.store),icon:const Icon(Icons.add))],child:Column(children:[
-    TextField(onChanged:(v)=>setState(()=>q=v),decoration:const InputDecoration(prefixIcon:Icon(Icons.search),hintText:'Search notes')),const SizedBox(height:12),
-    ...xs.map((n)=>Padding(padding:const EdgeInsets.only(bottom:10),child:CardBox(title:n.title,icon:Icons.sticky_note_2_outlined,child:Text(n.body))))
-  ]);}
-}
-Future<void> noteDialog(BuildContext context,LifeStore store)async{final n=TextEditingController();final b=TextEditingController();await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('New note'),content:SizedBox(width:550,child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,autofocus:true,decoration:const InputDecoration(labelText:'Title')),const SizedBox(height:10),TextField(controller:b,minLines:5,maxLines:10,decoration:const InputDecoration(labelText:'Write...'))])),actions:[FilledButton(onPressed:()async{if(n.text.trim().isNotEmpty)await store.addNote(n.text,b.text,'');if(ctx.mounted)Navigator.pop(ctx);},child:const Text('Save'))]));}
-
-class FocusPage extends StatefulWidget{const FocusPage({super.key});@override State<FocusPage> createState()=>_FocusState();}
-class _FocusState extends State<FocusPage>{static const total=1500;int remaining=total;Timer? timer;bool running=false;
-  @override void dispose(){timer?.cancel();super.dispose();}
-  void toggle(){if(running){timer?.cancel();setState(()=>running=false);}else{setState(()=>running=true);timer=Timer.periodic(const Duration(seconds:1),(_){if(remaining<=1){timer?.cancel();setState((){remaining=total;running=false;});}else{setState(()=>remaining--);}});}}
-  @override Widget build(BuildContext context){final m=(remaining~/60).toString().padLeft(2,'0');final s=(remaining%60).toString().padLeft(2,'0');return Frame(title:'Focus',subtitle:'25-minute deep work',child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:540),child:CardBox(title:'Focus session',icon:Icons.timer_outlined,child:Column(children:[
-    const SizedBox(height:20),Text(m+':'+s,style:const TextStyle(fontWeight:FontWeight.w900,fontSize:72)),LinearProgressIndicator(value:1-remaining/total,minHeight:10),const SizedBox(height:22),Row(mainAxisAlignment:MainAxisAlignment.center,children:[FilledButton.icon(onPressed:toggle,icon:Icon(running?Icons.pause:Icons.play_arrow),label:Text(running?'Pause':'Start')),const SizedBox(width:10),OutlinedButton(onPressed:()=>setState(()=>remaining=total),child:const Text('Reset'))])
-  ]))));}
+Future<void> habitDialog(BuildContext context, LifeStore store) async {
+  final controller = TextEditingController();
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('New habit'),
+      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: 'Habit name')),
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            if (controller.text.trim().isNotEmpty) await store.addHabit(controller.text, '✓');
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          child: const Text('Create'),
+        ),
+      ],
+    ),
+  );
 }
 
-class Statistics extends StatelessWidget{final LifeStore store;const Statistics({super.key,required this.store});
- @override Widget build(BuildContext context){final done=store.tasks.where((t)=>t.completed).length;final active=store.tasks.length-done;final habits=store.habits.where((h)=>h.isDoneOn(DateTime.now())).length;final avg=store.goals.isEmpty?null:(store.goals.map((g)=>g.progress).reduce((a,b)=>a+b)/store.goals.length).round();return Frame(title:'Statistics',subtitle:'Your system at a glance',child:GridView.count(crossAxisCount:MediaQuery.sizeOf(context).width>900?3:1,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:1.6,children:[
-  Metric(label:'Completed tasks',value:done.toString(),caption:active.toString()+' open',icon:Icons.check_circle_outline),
-  Metric(label:'Habits today',value:habits.toString(),caption:store.habits.length.toString()+' configured',icon:Icons.local_fire_department_outlined),
-  Metric(label:'Goal progress',value:avg==null?'—':avg.toString()+'%',caption:'average',icon:Icons.flag_outlined),
- ]);}
+class Projects extends StatelessWidget {
+  final LifeStore store;
+  const Projects({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = store.projects.map((project) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: CardBox(
+          title: project.name,
+          icon: Icons.folder_open,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(project.description.isEmpty ? 'No description' : project.description),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(value: project.progress / 100),
+              const SizedBox(height: 6),
+              Text(project.progress.toString() + '% • ' + project.status.name),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+
+    return Frame(
+      title: 'Projects',
+      subtitle: 'Keep multi-step work together',
+      actions: [
+        IconButton(onPressed: () => projectDialog(context, store), icon: const Icon(Icons.add)),
+      ],
+      child: cards.isEmpty ? const Text('No projects yet.') : Column(children: cards),
+    );
+  }
 }
 
-class Ideas extends StatelessWidget{final LifeStore store;const Ideas({super.key,required this.store});
- @override Widget build(BuildContext context)=>Frame(title:'Ideas',subtitle:'Capture first. Decide later.',actions:[IconButton(onPressed:()=>ideaDialog(context,store),icon:const Icon(Icons.add))],child:store.ideas.isEmpty?const Text('No ideas yet.'):Column(children:store.ideas.map((i)=>Padding(padding:const EdgeInsets.only(bottom:10),child:CardBox(title:i.title,icon:Icons.lightbulb_outline,child:Text(i.description.isEmpty?'No description':i.description)))).toList());
-}
-Future<void> ideaDialog(BuildContext context,LifeStore store)async{final n=TextEditingController();final d=TextEditingController();await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Capture idea'),content:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:n,autofocus:true,decoration:const InputDecoration(labelText:'Idea')),const SizedBox(height:10),TextField(controller:d,maxLines:4,decoration:const InputDecoration(labelText:'Notes'))]),actions:[FilledButton(onPressed:()async{if(n.text.trim().isNotEmpty)await store.addIdea(n.text,d.text);if(ctx.mounted)Navigator.pop(ctx);},child:const Text('Capture'))]));}
+Future<void> projectDialog(BuildContext context, LifeStore store) async {
+  final name = TextEditingController();
+  final description = TextEditingController();
 
-class AiPage extends StatefulWidget{final LifeStore store;const AiPage({super.key,required this.store});@override State<AiPage> createState()=>_AiState();}
-class _AiState extends State<AiPage>{final c=TextEditingController();final ai=LifeAi();AiReply? reply;
- @override void dispose(){c.dispose();super.dispose();}
- @override Widget build(BuildContext context)=>Frame(title:'Life AI',subtitle:'Offline • no API key • private by default',child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:800),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-  CardBox(title:'Ask',icon:Icons.auto_awesome,child:Row(crossAxisAlignment:CrossAxisAlignment.end,children:[Expanded(child:TextField(controller:c,minLines:1,maxLines:4,onSubmitted:(_)=>ask(),decoration:const InputDecoration(hintText:'Try: plan my day, what is overdue?, break down a task...'))),const SizedBox(width:10),FilledButton(onPressed:ask,child:const Text('Ask'))])),
-  if(reply!=null)...[const SizedBox(height:12),CardBox(title:'Response',icon:Icons.forum_outlined,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(reply!.text,style:const TextStyle(fontSize:16)),...reply!.steps.map((s)=>Padding(padding:const EdgeInsets.only(top:8),child:Row(children:[const Text('• '),Expanded(child:Text(s))]))) ]))]
- ])));
- void ask()=>setState(()=>reply=ai.ask(c.text,widget.store.tasks,widget.store.goals,widget.store.habits,widget.store.notes));
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('New project'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Name')),
+          const SizedBox(height: 10),
+          TextField(controller: description, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
+        ],
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            if (name.text.trim().isNotEmpty) await store.addProject(name.text, description.text);
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          child: const Text('Create'),
+        ),
+      ],
+    ),
+  );
+}
+
+class Notes extends StatefulWidget {
+  final LifeStore store;
+  const Notes({super.key, required this.store});
+
+  @override
+  State<Notes> createState() => _NotesState();
+}
+
+class _NotesState extends State<Notes> {
+  String query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final q = query.toLowerCase();
+    final results = widget.store.notes.where((n) {
+      return (n.title + ' ' + n.body + ' ' + n.tags).toLowerCase().contains(q);
+    }).toList();
+
+    final cards = results.map((n) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: CardBox(title: n.title, icon: Icons.sticky_note_2_outlined, child: Text(n.body)),
+      );
+    }).toList();
+
+    return Frame(
+      title: 'Notes',
+      subtitle: 'Searchable local knowledge',
+      actions: [
+        IconButton(onPressed: () => noteDialog(context, widget.store), icon: const Icon(Icons.add)),
+      ],
+      child: Column(
+        children: [
+          TextField(
+            onChanged: (v) => setState(() => query = v),
+            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search notes'),
+          ),
+          const SizedBox(height: 12),
+          if (cards.isEmpty) const Text('No matching notes.') else Column(children: cards),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> noteDialog(BuildContext context, LifeStore store) async {
+  final title = TextEditingController();
+  final body = TextEditingController();
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('New note'),
+      content: SizedBox(
+        width: 550,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: title, autofocus: true, decoration: const InputDecoration(labelText: 'Title')),
+            const SizedBox(height: 10),
+            TextField(controller: body, minLines: 5, maxLines: 10, decoration: const InputDecoration(labelText: 'Write...')),
+          ],
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            if (title.text.trim().isNotEmpty) await store.addNote(title.text, body.text, '');
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
+
+class FocusPage extends StatefulWidget {
+  const FocusPage({super.key});
+
+  @override
+  State<FocusPage> createState() => _FocusState();
+}
+
+class _FocusState extends State<FocusPage> {
+  static const total = 1500;
+  int remaining = total;
+  bool running = false;
+  Timer? timer;
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  void toggle() {
+    if (running) {
+      timer?.cancel();
+      setState(() => running = false);
+      return;
+    }
+
+    setState(() => running = true);
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (remaining <= 1) {
+        timer?.cancel();
+        setState(() {
+          remaining = total;
+          running = false;
+        });
+      } else {
+        setState(() => remaining--);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
+    final seconds = (remaining % 60).toString().padLeft(2, '0');
+
+    return Frame(
+      title: 'Focus',
+      subtitle: '25-minute deep work',
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: CardBox(
+            title: 'Focus session',
+            icon: Icons.timer_outlined,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Text(minutes + ':' + seconds, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 72)),
+                LinearProgressIndicator(value: 1 - remaining / total, minHeight: 10),
+                const SizedBox(height: 22),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: toggle,
+                      icon: Icon(running ? Icons.pause : Icons.play_arrow),
+                      label: Text(running ? 'Pause' : 'Start'),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton(
+                      onPressed: () {
+                        timer?.cancel();
+                        setState(() {
+                          remaining = total;
+                          running = false;
+                        });
+                      },
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class Statistics extends StatelessWidget {
+  final LifeStore store;
+  const Statistics({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = store.tasks.where((t) => t.completed).length;
+    final active = store.tasks.length - done;
+    final habits = store.habits.where((h) => h.isDoneOn(DateTime.now())).length;
+    final average = store.goals.isEmpty
+        ? null
+        : (store.goals.map((g) => g.progress).reduce((a, b) => a + b) / store.goals.length).round();
+
+    return Frame(
+      title: 'Statistics',
+      subtitle: 'Your system at a glance',
+      child: GridView.count(
+        crossAxisCount: MediaQuery.sizeOf(context).width > 900 ? 3 : 1,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.6,
+        children: [
+          Metric(label: 'Completed tasks', value: done.toString(), caption: active.toString() + ' open', icon: Icons.check_circle_outline),
+          Metric(label: 'Habits today', value: habits.toString(), caption: store.habits.length.toString() + ' configured', icon: Icons.local_fire_department_outlined),
+          Metric(label: 'Goal progress', value: average == null ? '—' : average.toString() + '%', caption: 'average', icon: Icons.flag_outlined),
+        ],
+      ),
+    );
+  }
+}
+
+class Ideas extends StatelessWidget {
+  final LifeStore store;
+  const Ideas({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = store.ideas.map((idea) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: CardBox(
+          title: idea.title,
+          icon: Icons.lightbulb_outline,
+          child: Text(idea.description.isEmpty ? 'No description' : idea.description),
+        ),
+      );
+    }).toList();
+
+    return Frame(
+      title: 'Ideas',
+      subtitle: 'Capture first. Decide later.',
+      actions: [
+        IconButton(onPressed: () => ideaDialog(context, store), icon: const Icon(Icons.add)),
+      ],
+      child: cards.isEmpty ? const Text('No ideas yet.') : Column(children: cards),
+    );
+  }
+}
+
+Future<void> ideaDialog(BuildContext context, LifeStore store) async {
+  final title = TextEditingController();
+  final description = TextEditingController();
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Capture idea'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(controller: title, autofocus: true, decoration: const InputDecoration(labelText: 'Idea')),
+          const SizedBox(height: 10),
+          TextField(controller: description, maxLines: 4, decoration: const InputDecoration(labelText: 'Notes')),
+        ],
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () async {
+            if (title.text.trim().isNotEmpty) await store.addIdea(title.text, description.text);
+            if (ctx.mounted) Navigator.pop(ctx);
+          },
+          child: const Text('Capture'),
+        ),
+      ],
+    ),
+  );
+}
+
+class AiPage extends StatefulWidget {
+  final LifeStore store;
+  const AiPage({super.key, required this.store});
+
+  @override
+  State<AiPage> createState() => _AiState();
+}
+
+class _AiState extends State<AiPage> {
+  final input = TextEditingController();
+  final ai = LifeAi();
+  AiReply? reply;
+
+  @override
+  void dispose() {
+    input.dispose();
+    super.dispose();
+  }
+
+  void ask() {
+    setState(() {
+      reply = ai.ask(
+        input.text,
+        widget.store.tasks,
+        widget.store.goals,
+        widget.store.habits,
+        widget.store.notes,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = reply?.steps ?? const <String>[];
+    return Frame(
+      title: 'Life AI',
+      subtitle: 'Offline • no API key • private by default',
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CardBox(
+                title: 'Ask',
+                icon: Icons.auto_awesome,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: input,
+                        minLines: 1,
+                        maxLines: 4,
+                        onSubmitted: (_) => ask(),
+                        decoration: const InputDecoration(hintText: 'Try: plan my day, what is overdue?, break down a task...'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    FilledButton(onPressed: ask, child: const Text('Ask')),
+                  ],
+                ),
+              ),
+              if (reply != null) ...[
+                const SizedBox(height: 12),
+                CardBox(
+                  title: 'Response',
+                  icon: Icons.forum_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(reply!.text, style: const TextStyle(fontSize: 16)),
+                      for (final step in steps)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('• '),
+                              Expanded(child: Text(step)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class Settings extends StatelessWidget{final LifeStore store;final NotificationService notifications;final ValueChanged<ThemeMode> onTheme;const Settings({super.key,required this.store,required this.notifications,required this.onTheme});
