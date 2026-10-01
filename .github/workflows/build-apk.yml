@@ -43,7 +43,11 @@ jobs:
               s=p.read_text()
               s=s.replace('android {', 'android {', 1)
               if 'isCoreLibraryDesugaringEnabled = true' not in s:
-                  s=s.replace('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17', 1) if 'compileOptions {' in s else s.replace('android {', 'android {\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }', 1)
+                  if 'compileOptions {' not in s:
+                      s=s.replace('android {', 'android {\n    compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }', 1)
+                  else:
+                      s=s.replace('compileOptions {','compileOptions {\n        isCoreLibraryDesugaringEnabled = true',1)
+              s=s.replace('sourceCompatibility = JavaVersion.VERSION_11','sourceCompatibility = JavaVersion.VERSION_17').replace('targetCompatibility = JavaVersion.VERSION_11','targetCompatibility = JavaVersion.VERSION_17').replace('sourceCompatibility = JavaVersion.VERSION_1_8','sourceCompatibility = JavaVersion.VERSION_17').replace('targetCompatibility = JavaVersion.VERSION_1_8','targetCompatibility = JavaVersion.VERSION_17')
               if 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")' not in s:
                   s=s.replace('dependencies {', 'dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")', 1) if 'dependencies {' in s else s+'\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
               p.write_text(s)
@@ -51,7 +55,11 @@ jobs:
               p=Path("android/app/build.gradle")
               s=p.read_text()
               if 'coreLibraryDesugaringEnabled true' not in s:
-                  s=s.replace('compileOptions {', 'compileOptions {\n        coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17', 1) if 'compileOptions {' in s else s.replace('android {', 'android {\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }', 1)
+                  if 'compileOptions {' not in s:
+                      s=s.replace('android {','android {\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }',1)
+                  else:
+                      s=s.replace('compileOptions {','compileOptions {\n        coreLibraryDesugaringEnabled true',1)
+              s=s.replace('sourceCompatibility JavaVersion.VERSION_1_8','sourceCompatibility JavaVersion.VERSION_17').replace('targetCompatibility JavaVersion.VERSION_1_8','targetCompatibility JavaVersion.VERSION_17')
               if "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'" not in s:
                   s=s.replace('dependencies {', "dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'", 1)
               p.write_text(s)
